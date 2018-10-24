@@ -8,7 +8,7 @@ output: ioslides_presentation
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Análises sobre a mortalidade causada pelo câncer no Brasil 
+## Análises sobre a mortalidade causada pelo câncer no Brasil. 
 
 Dados do Sistema de Informações sobre Mortalidade (SIM), do Ministério da Saúde, indicam que os diferentes tipos de câncer correspondem à segunda maior causa de mortes por doenças no Brasil, ficando atrás apenas das doenças relacionadas ao aparelho circulatório. Um estudo recente (Luzzati e outros, 2018) utilizou informações de 122 países e concluiu que há correlação positiva e significante entre desenvolvimento econômico e incidência de câncer. Isso indica que há uma tendência de que o câncer tenha impacto crescente sobre a saúde da população mundial nas próximas décadas (Ferlay e outros, 2012). Em consonância com isso, um estudo feito pelo Observatório de Oncologia da Associação Brasileira de Leucemia e Linfoma indica que o câncer pode se tornar a principal causa de mortes no Brasil em 2029.
 
