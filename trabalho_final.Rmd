@@ -1,0 +1,179 @@
+---
+title: "Trabalho final - Coleta e Análise de Dados Secundários"
+author: "Rodrigo Eloy Arantes"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Análises sobre a mortalidade causada pelo câncer no Brasil 
+
+Dados do Sistema de Informações sobre Mortalidade (SIM), do Ministério da Saúde, indicam que os diferentes tipos de câncer correspondem à segunda maior causa de mortes por doenças no Brasil, ficando atrás apenas das doenças relacionadas ao aparelho circulatório. Um estudo recente (Luzzati e outros, 2018) utilizou informações de 122 países e concluiu que há correlação positiva e significante entre desenvolvimento econômico e incidência de câncer. Isso indica que há uma tendência de que o câncer tenha impacto crescente sobre a saúde da população mundial nas próximas décadas (Ferlay e outros, 2012). Em consonância com isso, um estudo feito pelo Observatório de Oncologia da Associação Brasileira de Leucemia e Linfoma indica que o câncer pode se tornar a principal causa de mortes no Brasil em 2029.
+
+## OBJETIVO
+
+A Política Nacional para Prevenção e Combate ao Câncer, do Ministério da Saúde, tem como um dos principais objetivos a redução da mortalidade causada pelo câncer. Nesse sentido, o objetivo desse trabalho é analisar questões relacionadas ao aumento da mortalidade causada pelo câncer no Brasil.
+
+## INSTALANDO PACOTES
+Utilizando o macetinho, foram instalados os pacotes utilizados na disciplina:
+
+```{r}
+lista.de.pacotes = c("tidyverse","lubridate","janitor","readxl","stringr","repmis") #
+novos.pacotes <- lista.de.pacotes[!(lista.de.pacotes %in%
+                                      installed.packages()[,"Package"])]
+if(length(novos.pacotes) > 0) {install.packages(novos.pacotes)}
+lapply(lista.de.pacotes, require, character.only=T)
+rm(lista.de.pacotes,novos.pacotes)
+gc()
+
+library(tidyverse)
+```
+
+
+## EXTRAÇÃO DOS DADOS E IMPORTAÇÃO PARA O R
+
+Os dados sobre mortalidade utilizados nas análises a seguir foram extraídos da plataforma tabnet (http://tabnet.datasus.gov.br/). Nessa extração, foram identificadas os registros totais de mortes e os registros de mortes causadas por neoplasias (câncer), por município.
+
+Os arquivos extraídos do tabnet foram lidos no ambiente R, conforme a seguir:
+
+```{r}
+library(readr)
+mortalidade_2016 <- read_csv2("~/trabalho_final/mortalidade_2016.csv")
+mortalidade_2001 <- read_csv2("~/trabalho_final/mortalidade_2001.csv")
+```
+
+##
+Depois da importação, foi criado um novo objeto contendo informações sobre os dois arquivos importados, excluída a coluna repetida (nome do município)
+```{r}
+mortalidade <- mortalidade_2016 %>% 
+  inner_join(mortalidade_2001, "cod_ibge") %>% 
+  select(-nome_mun.y)
+```
+
+Depois, foi importado um arquivo contendo dados do Índice de desenvolvimento humano municipal (IDHM)calculado pelo PNUD, IPEA e Fundação João Pinheiro com base nos dados dos censos do IBGE:
+
+```{r}
+IDHM <- read_csv2("~/trabalho_final/IDHM.csv")
+```
+
+O novo objeto criado foi juntado aos dados de mortalidade, criando-se um novo objeto denominado "mortalidade_idhm", que será utilizado para as análises
+
+```{r}
+mortalidade_idhm <- mortalidade %>% 
+  inner_join(IDHM, "cod_ibge") %>% 
+  select(-nome_mun)
+```
+
+
+## Alterando colunas
+
+Foi necessário transformar as mortes_cancer_2016 e mortes_cancer_2001 em numéricas:
+
+```{r}
+mortalidade_idhm <- mortalidade_idhm %>% 
+  mutate(mortes_cancer_2016 = as.numeric(mortes_cancer_2016)) %>% 
+  mutate(mortes_cancer_2001 = as.numeric(mortes_cancer_2001))
+```
+
+
+## ADICIONANDO DADOS...
+
+Para facilitar a análise, foram criadas duas novas colunas, contendo as siglas dos Estados e os nomes das Regiões:
+
+```{r}
+mortalidade_idhm <- mortalidade_idhm %>% 
+  mutate(nome_UF=case_when(
+    UF=="11"~"RO",UF=="12"~"AC",UF=="13"~"AM",UF=="14"~"RR",UF=="15"~"PA",UF=="16"~"AP",UF=="17"~"TO",UF=="21"~"MA",
+    UF=="22"~"PI",UF=="23"~"CE",UF=="24"~"RN", UF=="25"~"PB",UF=="26"~"PE",UF=="27"~"AL",UF=="28"~"SE",UF=="29"~"BA",
+    UF=="31"~"MG",UF=="32"~"ES",UF=="33"~"RJ",UF=="35"~"SP",UF=="41"~"PR",UF=="42"~"SC",UF=="43"~"RS",UF=="50"~"MS",
+    UF=="51"~"MT",UF=="52"~"GO",UF=="53"~"DF")
+    )
+```
+
+```{r}
+mortalidade_idhm <- mortalidade_idhm %>% 
+  mutate(regiao=case_when(
+    UF=="11"~"Norte",UF=="12"~"Norte",UF=="13"~"Norte",UF=="14"~"Norte",UF=="15"~"Norte",UF=="16"~"Norte",
+    UF=="17"~"Norte",UF=="21"~"Nordeste",UF=="22"~"Nordeste",UF=="23"~"Nordeste",UF=="24"~"Nordeste",UF=="25"~"Nordeste",
+    UF=="26"~"Nordeste",UF=="27"~"Nordeste",UF=="28"~"Nordeste",UF=="29"~"Nordeste",UF=="31"~"Sudeste",UF=="32"~"Sudeste",
+    UF=="33"~"Sudeste",UF=="35"~"Sudeste",UF=="41"~"Sul",UF=="42"~"Sul",UF=="43"~"Sul",UF=="50"~"Centro-Oeste",
+    UF=="51"~"Centro-Oeste",UF=="52"~"Centro-Oeste",UF=="53"~"Centro-Oeste")
+  )
+
+```
+
+## ADICIONANDO DADOS...
+
+Foram criadas duas colunas que indicam a proporção de mortes por câncer no total de mortes em cada ano (2001 e 2016):
+```{r}
+mortalidade_idhm <- mortalidade_idhm %>%
+  mutate(prop_cancer_2016=mortes_cancer_2016/mortes_total_2016) %>% 
+  mutate(prop_cancer_2001=mortes_cancer_2001/mortes_total_2001)
+```
+
+Foi criada, também, uma coluna que indica se houve aumento na proporção de mortes causadas pelo câncer entre 2001 e 2016:
+
+```{r}
+mortalidade_idhm <- mortalidade_idhm %>%
+  mutate(aumento_cancer=case_when(
+    prop_cancer_2016>prop_cancer_2001~"Sim",
+    prop_cancer_2016<prop_cancer_2001~"Nao"))
+```
+
+
+## ADICIONANDO DADOS...
+
+Foi criada uma variável numérica com atributo = 1 para contar a quantidade de municípios
+
+```{r}
+mortalidade_idhm <- mortalidade_idhm %>%
+  mutate(var_teste = 1)
+```
+
+Foram excluídos os casos de N/A
+
+```{r}
+mortalidade_idhm <- mortalidade_idhm %>%
+  filter(!is.na(aumento_cancer))
+```
+
+## Analisando...
+
+A mortalidade causada pelo câncer é superior a 40% do total de mortes registradas em 2016 em 8 municípios: 
+```{r}
+mortalidade_idhm %>% 
+  filter(prop_cancer_2016>0.4) %>% 
+  count()
+```
+
+
+
+## Analisando...
+
+O gráfico a seguir indica quantos municípios reduziram a mortalidade causada pelo câncer no período analisado, por regiões.
+
+```{r}
+grafico <- mortalidade_idhm %>%
+  group_by(regiao) %>% 
+  ggplot(aes(x=regiao, 
+             y=var_teste,
+             fill=aumento_cancer,
+             color=aumento_cancer)) +
+  geom_bar(stat = "identity")+
+  ylab("Qtde Municípios")+
+  xlab("Regiões")+
+  theme(legend.position = "top")
+```
+
+
+Gráfico no slide seguinte...
+
+## Analisando...
+```{r}
+grafico
+```
+
+
+
